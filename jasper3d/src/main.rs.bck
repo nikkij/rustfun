@@ -1,0 +1,105 @@
+extern crate glfw;
+
+//use glfw;
+use glfw::{Context, Key, Action, WindowMode, WindowEvent};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::mpsc::Receiver;
+//use window::EventMAanager;
+
+fn main() {
+  say_hello(5,2);
+
+  let mut window = Window::create_new();
+    
+  // while !window.should_close() {
+  //   window.glfw.poll_events();
+  //   for (_, event) in window.glfw::flush_messages(&events) {
+  //     window.handle_window_event(&mut window, event);
+  //   }
+  // }
+
+}
+
+
+pub struct Window {
+    glfw:   glfw::Glfw,
+    window: glfw::Window,
+    events: Rc<Receiver<(f64, WindowEvent)>>,
+    unhandled_events: Rc<RefCell<Vec<WindowEvent>>>
+}
+
+impl Window {
+
+  /// Indicates whether this window should be closed.
+  #[inline]
+  pub fn should_close(&self) -> bool {
+    self.window.should_close()
+  }
+
+  /// Access the glfw context.
+  #[inline]
+  pub fn context<'r>(&'r self) -> &'r glfw::Glfw {
+    &self.glfw
+  }
+
+  /// Access the glfw window.
+  #[inline]
+  pub fn glfw_window(&self) -> &glfw::Window {
+    &self.window
+  }
+
+  /// Mutably access the glfw window.
+  #[inline]
+  pub fn glfw_window_mut(&mut self) -> &mut glfw::Window {
+      &mut self.window
+  }
+
+  pub fn events(&self) -> EventManager {
+    EventManager::new(self.events.clone(), self.unhandled_events.clone())
+  }
+
+  pub fn create_new () -> Window {
+    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    let (mut window, events) = glfw.create_window(300, 300, "Hello this is window", glfw::WindowMode::Windowed)
+        .expect("Failed to create GLFW window.");
+
+    window.make_current();
+
+    // derive a specific window from the Window struct  
+    let mut user_window = Window {
+        glfw     : glfw,
+        window   : window,
+        events   : Rc::new(events),
+        unhandled_events: Rc::new(RefCell::new(Vec::new()))
+    };
+
+    user_window.window.set_key_polling(true);
+
+    user_window  
+  }  
+
+
+  pub fn handle_events(&mut self) {
+    //let unhandled_events = self.unhandled_events.clone();
+    let events = self.events.clone();
+
+    for (_, event) in glfw::flush_messages(&*events) {
+      self.handle_event(event);
+    }
+  }
+    
+  pub fn handle_event(&mut self, event: glfw::WindowEvent) {
+    match event {
+        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+            self.should_close(true)
+        }
+        _ => {}
+    }
+  }
+
+}
+
+fn say_hello(x: i32, y: i32) {
+  println!("hello {}", y+x);
+}
